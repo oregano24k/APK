@@ -96,7 +96,7 @@ export async function generateConversionSteps(repoUrl: string, androidVersion: s
     3.  **Configuración del Entorno (¡El Paso Clave!)**:
         - **title**: "Paso 3: Configuración del Entorno"
         - **explanation**: "${selectedOS === 'macos_linux'
-            ? `Este es el paso más importante y es una **configuración única para tu computadora**, no solo para este proyecto. Piensa en tu terminal como un taller. El archivo que vamos a editar (\`.zshrc\` o \`.bash_profile\`) es como el **plano maestro** de ese taller. Al añadirle nuestras instrucciones, le estamos diciendo a todas tus herramientas (incluida la terminal) dónde encontrar permanentemente las herramientas de Android que acabamos de instalar. Este archivo vive en tu carpeta de inicio (\`~\`), no en la carpeta del proyecto \`mi-app-web\`.\\n\\nSigue los sub-pasos a continuación en orden estricto para evitar errores:`
+            ? `Este es el paso más importante y es una **configuración única para tu computadora**, no solo para este proyecto. Piensa en tu terminal como un taller. El archivo que vamos a editar (\\\`.zshrc\\\` o \\\`.bash_profile\\\`) es como el **plano maestro** de ese taller. Al añadirle nuestras instrucciones, le estamos diciendo a todas tus herramientas (incluida la terminal) dónde encontrar permanentemente las herramientas de Android que acabamos de instalar. Este archivo vive en tu carpeta de inicio (\\\`~\\\`), no en la carpeta del proyecto \\\`mi-app-web\\\`.\\n\\nSigue los sub-pasos a continuación en orden estricto para evitar errores:`
             : `Sigue las instrucciones detalladas a continuación para configurar tu sistema manualmente. Luego, usa los botones de validación para confirmar que todo está correcto.`
         }"
         - **actions**: ${selectedOS === 'macos_linux'
@@ -128,40 +128,50 @@ export async function generateConversionSteps(repoUrl: string, androidVersion: s
         - **explanation**: "Ahora, vamos a crear el esqueleto de tu proyecto Cordova. Este comando creará una nueva carpeta con todos los archivos iniciales que necesitas."
         - **command**: "cordova create mi-app-web com.ejemplo.miapp MiAppWeb"
         - **details**: "--- ¿Qué significa cada parte? ---\\n1. 'mi-app-web': Es el nombre de la carpeta que se creará para tu proyecto.\\n2. 'com.ejemplo.miapp': Es el identificador único de tu app, similar al que se usa en la Play Store. Es una buena práctica cambiar 'ejemplo' por tu propio dominio (ej. 'com.tunombre.miapp').\\n3. 'MiAppWeb': Es el nombre oficial de tu app, el que los usuarios verán en su teléfono.\\n--- ¿Y si la carpeta ya existe? ---\\nSi ves el error 'Path already exists', puedes borrar la carpeta existente con el comando adecuado para tu sistema:\\n- Para **${selectedOS === 'macos_linux' ? 'macOS o Linux' : 'Windows'}**, usa: '${selectedOS === 'macos_linux' ? 'rm -rf mi-app-web' : 'rmdir /s /q mi-app-web'}'\\n**Aviso**: Este comando borrará la carpeta y todo su contenido de forma permanente."
-    5.  **Entrar y Añadir Plataforma**:
-        - **title**: "Paso 5: Añadir la Plataforma Android"
-        - **explanation**: "Ahora entraremos en la carpeta de tu nuevo proyecto y le diremos a Cordova que queremos construir una app para Android."
-        - **command**: "cd mi-app-web && cordova platform add android"
-        - **details**: "El comando 'cd mi-app-web' te mueve DENTRO de la carpeta del proyecto. A partir de ahora, todos los comandos deben ejecutarse desde aquí. Cordova usará la versión de Android SDK que instalaste (${androidVersion}) para configurar el proyecto."
-    6.  **Verificación**:
-        - **title**: "Paso 6: Verifica tu Configuración"
+    5.  **Entrar al Proyecto**:
+        - **title**: "Paso 5: Entrar a la Carpeta del Proyecto"
+        - **explanation**: "Ahora entraremos en la carpeta de tu nuevo proyecto. ¡Es muy importante! A partir de este momento, todos los comandos deben ejecutarse DESDE DENTRO de esta carpeta."
+        - **command**: "cd mi-app-web"
+        - **details**: "El comando 'cd' (Change Directory) te mueve DENTRO de la carpeta del proyecto. Tu terminal debería mostrar ahora que estás en la ruta \\\`.../mi-app-web\\\`. No salgas de esta carpeta para los siguientes pasos."
+    6.  **Añadir Plataforma Android**:
+        - **title**: "Paso 6: Añadir la Plataforma Android"
+        - **explanation**: "Ahora que estás dentro del proyecto, dile a Cordova que quieres construir una app para Android. Esto creará una subcarpeta \\\`platforms/android\\\` con todo lo necesario."
+        - **command**: "cordova platform add android"
+        - **details**: "Cordova usará la versión de Android SDK que instalaste (${androidVersion}) para configurar el proyecto de Android."
+    7.  **Configurar Gradle Wrapper**:
+        - **title**: "Paso 7: Configurar el Gradle Wrapper"
+        - **explanation**: "Gradle es la herramienta que construye tu app. El 'Wrapper' es un script que asegura que tu proyecto siempre use la versión correcta de Gradle, evitando errores. Este comando lo configura dentro de tu proyecto."
+        - **command**: "${selectedOS === 'macos_linux' ? '(cd platforms/android && ./gradlew wrapper)' : '(cd platforms\\android && gradlew.bat wrapper)'}"
+        - **details**: "Este comando va momentáneamente a la carpeta de Android, ejecuta el script del wrapper para configurarlo, y te regresa a la carpeta principal del proyecto. Es una buena práctica para asegurar que la compilación sea estable."
+    8.  **Verificación**:
+        - **title**: "Paso 8: Verifica tu Configuración"
         - **explanation**: "Este comando es como un chequeo médico para tu configuración. Analizará tu sistema para asegurarse de que todo lo que instalaste (Java, Android SDK, etc.) está correctamente configurado y visible para Cordova. No te asustes si ves algún texto en rojo; es normal y te diremos exactamente cómo solucionarlo."
         - **command**: "cordova requirements"
-        - **details**: "--- ¿Qué buscar en la Salida? ---\\nBusca en la lista que aparece. Las líneas que terminan en verde (OK) están perfectas. Si ves alguna línea en rojo (FAILED), significa que algo necesita tu atención.\\n\\n--- SOLUCIÓN DE ERRORES COMUNES ---\\n1. **ERROR: 'Gradle... FAILED' (¡El más común!)**\\n   a. **Por qué sucede**: Cordova no puede encontrar \\\`Gradle\\\`, la herramienta que construye tu app. Esto casi siempre es porque las 'Command-line Tools' de Android, aunque estén instaladas (como confirmaste con la imagen que enviaste), no son 'visibles' para tu sesión de terminal actual.\\n   b. **Cómo solucionarlo (Paso a paso infalible)**:\\n      1. **CIERRA COMPLETAMENTE TU TERMINAL**: No basta con el comando 'source'. Usa \\\`Cmd + Q\\\` en macOS o cierra todas las ventanas de CMD/PowerShell en Windows. Este es el paso más importante para que el sistema 'refresque' sus rutas.\\n      2. **Abre una terminal NUEVA** y navega de nuevo a tu proyecto (ej. \\\`cd mi-app-web\\\`).\\n      3. **Vuelve a intentar**: Ejecuta \\\`cordova requirements\\\` otra vez. El 99% de las veces, esto soluciona el problema.\\n      4. **Si el error persiste (Plan B - Diagnóstico)**: Ejecuta el comando de diagnóstico para tu sistema:\\n         - **Para macOS/Linux**: \\\`which sdkmanager\\\`\\n         - **Para Windows**: \\\`where sdkmanager\\\`\\n      5. **Analiza el Resultado**:\\n         - **Si ves una ruta** (ej. \\\`/Users/tu/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager\\\`): ¡Esto es bueno! Significa que tu PATH está bien. El problema es muy raro. Intenta reiniciar tu computadora y, si aún falla, vuelve a verificar la instalación en el Paso 2.\\n         - **Si NO ves una ruta** (o un error como 'command not found'): ¡Hemos encontrado el problema! Significa que la ruta de tu SDK de Android está mal configurada. **Vuelve al Paso 3** y sigue las instrucciones de 'Configuración del Entorno' con mucho cuidado. La ruta que pusiste en \\\`ANDROID_HOME\\\` probablemente es incorrecta o tiene un error de tipeo.\\n2. **ERROR: 'Android target... FAILED'**\\n   a. **Causa**: La versión específica de la plataforma de Android que Cordova busca no está instalada.\\n   b. **Solución**: Abre Android Studio, ve a 'More Actions' -> 'SDK Manager' -> pestaña 'SDK Platforms'. Busca la versión que elegiste (**${androidVersion}**) en la lista y asegúrate de que esté **marcada e instalada**. Reinicia la terminal y vuelve a intentarlo.\\n3. **ERROR: 'JAVA_HOME... FAILED'**\\n   a. **Causa**: Tu sistema no sabe dónde está instalado Java.\\n   b. **Solución**: Este es un problema con el Paso 3. Vuelve a revisar las instrucciones de 'Configuración del Entorno' para tu sistema operativo y asegúrate de haber creado y guardado las variables 'JAVA_HOME' y 'ANDROID_HOME' correctamente. ¡Recuerda abrir una **nueva** terminal después de hacer cambios!"
-    7.  **Mover Archivos**:
-        - **title**: "Paso 7: Añade tu Código Web"
+        - **details**: "--- ¿Qué buscar en la Salida? ---\\nBusca en la lista que aparece. Las líneas que terminan en verde (OK) están perfectas. Si ves alguna línea en rojo (FAILED), significa que algo necesita tu atención.\\n\\n--- SOLUCIÓN DE ERRORES COMUNES ---\\n1. **ERROR: 'Gradle... FAILED' (¡El más común!)**\\n   a. **Por qué sucede**: Cordova no puede encontrar \\\`Gradle\\\`, la herramienta que construye tu app. Esto casi siempre es porque las 'Command-line Tools' de Android, aunque estén instaladas, no son 'visibles' para tu sesión de terminal actual.\\n   b. **Cómo solucionarlo (Paso a paso infalible)**:\\n      1. **CIERRA COMPLETAMENTE TU TERMINAL**: No basta con el comando 'source'. Usa \\\`Cmd + Q\\\` en macOS o cierra todas las ventanas de CMD/PowerShell en Windows. Este es el paso más importante para que el sistema 'refresque' sus rutas.\\n      2. **Abre una terminal NUEVA** y navega de nuevo a tu proyecto (ej. \\\`cd mi-app-web\\\`).\\n      3. **Vuelve a intentar**: Ejecuta \\\`cordova requirements\\\` otra vez. El 99% de las veces, esto soluciona el problema.\\n      4. **Si el error persiste (Plan B - Diagnóstico)**: Ejecuta el comando de diagnóstico para tu sistema:\\n         - **Para macOS/Linux**: \\\`which sdkmanager\\\`\\n         - **Para Windows**: \\\`where sdkmanager\\\`\\n      5. **Analiza el Resultado**:\\n         - **Si ves una ruta** (ej. \\\`/Users/tu/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager\\\`): ¡Esto es bueno! Significa que tu PATH está bien. El problema es muy raro. Intenta reiniciar tu computadora y, si aún falla, vuelve a verificar la instalación en el Paso 2.\\n         - **Si NO ves una ruta** (o un error como 'command not found'): ¡Hemos encontrado el problema! Significa que la ruta de tu SDK de Android está mal configurada. **Vuelve al Paso 3** y sigue las instrucciones de 'Configuración del Entorno' con mucho cuidado. La ruta que pusiste en \\\`ANDROID_HOME\\\` probablemente es incorrecta o tiene un error de tipeo.\\n2. **ERROR: 'Android target... FAILED'**\\n   a. **Causa**: La versión específica de la plataforma de Android que Cordova busca no está instalada.\\n   b. **Solución**: Abre Android Studio, ve a 'More Actions' -> 'SDK Manager' -> pestaña 'SDK Platforms'. Busca la versión que elegiste (**${androidVersion}**) en la lista y asegúrate de que esté **marcada e instalada**. Reinicia la terminal y vuelve a intentarlo.\\n3. **ERROR: 'JAVA_HOME... FAILED'**\\n   a. **Causa**: Tu sistema no sabe dónde está instalado Java.\\n   b. **Solución**: Este es un problema con el Paso 3. Vuelve a revisar las instrucciones de 'Configuración del Entorno' para tu sistema operativo y asegúrate de haber creado y guardado las variables 'JAVA_HOME' y 'ANDROID_HOME' correctamente. ¡Recuerda abrir una **nueva** terminal después de hacer cambios!"
+    9.  **Mover Archivos**:
+        - **title**: "Paso 9: Añade tu Código Web"
         - **explanation**: "Es hora de mover tu proyecto web. Borra todo el contenido de la carpeta 'www' que se creó y copia allí todos tus archivos HTML, CSS y JavaScript."
         - **command**: ""
         - **details**: "La carpeta 'www' es donde vive tu app. Cordova tomará todo lo que esté aquí y lo empaquetará."
-    8.  **Construir el APK**:
-        - **title**: "Paso 8: Construir el APK"
+    10. **Construir el APK**:
+        - **title**: "Paso 10: Construir el APK"
         - **explanation**: "Este es el gran momento. Ejecuta este comando desde la carpeta de tu proyecto para que Cordova compile y empaquete tu código en un archivo APK instalable."
         - **command**: "cordova build android"
         - **details**: "Este proceso puede tardar unos minutos la primera vez, ya que descargará las herramientas necesarias (como Gradle). Si todo va bien, verás un mensaje de 'BUILD SUCCESSFUL'."
-    9.  **Encontrar el APK**:
-        - **title**: "Paso 9: ¡Encuentra tu APK!"
+    11. **Encontrar el APK**:
+        - **title**: "Paso 11: ¡Encuentra tu APK!"
         - **explanation**: "¡Felicidades! Tu APK está listo. Lo encontrarás dentro de la carpeta de tu proyecto en la siguiente ruta. Puedes arrastrar este archivo a tu teléfono Android para instalarlo."
         - **command**: "platforms/android/app/build/outputs/apk/debug/app-debug.apk"
         - **details**: "El término 'debug' significa que es una versión de prueba. Para publicar en la Play Store, necesitarás crear una versión 'release' firmada, pero para probar, ¡esto es perfecto!"
-    10. **¡Lo Lograste! Próximos Pasos**:
-        - **title**: "Paso 10: ¡Lo Lograste! Próximos Pasos"
+    12. **¡Lo Lograste! Próximos Pasos**:
+        - **title**: "Paso 12: ¡Lo Lograste! Próximos Pasos"
         - **explanation**: "¡Excelente trabajo! Has convertido tu proyecto web en una app de Android. Como próximo paso, puedes abrir el archivo \\\`config.xml\\\` en la raíz de tu proyecto para personalizar cosas como el nombre de la app, el autor y el icono."
         - **command**: ""
         - **details**: ""
-    11. **Icono de la App (Opcional)**: El paso final.
-        - **title**: "Paso 11: Un Icono para tu App (Opcional)"
+    13. **Icono de la App (Opcional)**: El paso final.
+        - **title**: "Paso 13: Un Icono para tu App (Opcional)"
         - **explanation**: "¡Aquí tienes un icono sugerido para tu nueva app! Guarda el siguiente código como un archivo (por ejemplo, 'www/img/icon.svg') y luego añade esta línea dentro de la etiqueta \${'<widget>'} en tu archivo 'config.xml' para usarlo: \${'<icon src=\\"www/img/icon.svg\\" />'}"
-        - **command**: \`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4ade80;" /><stop offset="100%" style="stop-color:#22d3ee;" /></linearGradient></defs><path fill="url(#g)" d="M85,5H15C9.5,5,5,9.5,5,15v70c0,5.5,4.5,10,10,10h70c5.5,0,10-4.5,10-10V15C95,9.5,90.5,5,85,5z M50,87.5 c-4.1,0-7.5-3.4-7.5-7.5s3.4-7.5,7.5-7.5s7.5,3.4,7.5,7.5S54.1,87.5,50,87.5z M80,65H20V20h60V65z" /><path fill="white" d="M48.6,48.2l-8-10.7c-0.8-1-2-1.6-3.3-1.6c-2.2,0-4,1.8-4,4v0.2h5.3l5.5,7.3l-6.8,9.1h-5.9v0.2c0,2.2,1.8,4,4,4 c1.3,0,2.5-0.6,3.3-1.6l8-10.7C49.5,50.8,49.5,49.2,48.6,48.2z M69.6,36.1h-5.9v0.2c0,2.2,1.8,4,4,4c1.3,0,2.5-0.6,3.3-1.6l8-10.7 c0.8-1,0.8-2.6,0-3.6l-8-10.7c-0.8-1-2-1.6-3.3-1.6c-2.2,0-4,1.8-4,4v0.2h5.9l6.8,9.1L69.6,36.1z" transform="translate(0, 5)"/></svg>\`
+        - **command**: \`\`
         - **details**: ""
         - **actions**: []
   `;
