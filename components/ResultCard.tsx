@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Step } from '../App';
+
+
+import React, { useState } from 'react';
+import { Step, Action } from '../App';
 import { CodeBlock } from './CodeBlock';
 import { ActionButton } from './ActionButton';
 import DetailsDisplay from './DetailsDisplay';
@@ -11,15 +13,8 @@ interface ResultCardProps {
 
 const ResultCard: React.FC<ResultCardProps> = ({ steps, onReset }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
-  const [selectedOS, setSelectedOS] = useState<'macos_linux' | 'windows' | null>(null);
-
+  
   const currentStep = steps[currentStepIndex];
-
-  // Restablecer la selección de SO cuando cambia el paso
-  useEffect(() => {
-    setSelectedOS(null);
-  }, [currentStepIndex]);
-
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -35,13 +30,19 @@ const ResultCard: React.FC<ResultCardProps> = ({ steps, onReset }) => {
 
   const isLastStep = currentStepIndex === steps.length - 1;
   const isFirstStep = currentStepIndex === 0;
-  
-  const isOsStep = currentStep.isOsSpecific && currentStep.osInstructions;
-  const instructions = isOsStep && selectedOS ? currentStep.osInstructions![selectedOS] : currentStep;
+
+  const groupedActions = currentStep.actions?.reduce((acc, action) => {
+    const groupKey = action.group || 'default';
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
+    }
+    acc[groupKey].push(action);
+    return acc;
+  }, {} as Record<string, Action[]>);
 
 
   return (
-    <div className="mt-10 p-6 sm:p-8 bg-white border border-gray-200 rounded-xl shadow-2xl">
+    <div className="mt-10 p-6 sm:p-8 bg-white border border-gray-200 rounded-xl shadow-2xl animate-fade-in">
       <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-green-500 to-cyan-500 text-transparent bg-clip-text mb-2">
         Tu Guía Interactiva
       </h2>
@@ -52,62 +53,75 @@ const ResultCard: React.FC<ResultCardProps> = ({ steps, onReset }) => {
       <div className="border border-gray-200 rounded-lg bg-gray-50/50 p-6 min-h-[300px] flex flex-col transition-all duration-300">
         <h3 className="text-2xl font-bold text-cyan-700 mb-4">{currentStep.title}</h3>
         
-        {/* Selector de SO */}
-        {isOsStep && !selectedOS && (
-          <div className="flex-grow flex flex-col justify-center">
-            <p className="text-gray-700 leading-relaxed mb-6 text-center">{currentStep.explanation}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <button 
-                  onClick={() => setSelectedOS('macos_linux')}
-                  className="p-6 border-2 border-gray-300 rounded-lg text-left hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300"
-                >
-                  <span className="text-2xl" role="img" aria-label="Apple">💻</span>
-                  <h4 className="font-bold text-lg text-gray-800 mt-2">macOS / Linux</h4>
-                  <p className="text-sm text-gray-600">Para terminales ZSH o Bash.</p>
-                </button>
-                 <button 
-                  onClick={() => setSelectedOS('windows')}
-                  className="p-6 border-2 border-gray-300 rounded-lg text-left hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300"
-                 >
-                  <span className="text-2xl" role="img" aria-label="Windows">🖥️</span>
-                  <h4 className="font-bold text-lg text-gray-800 mt-2">Windows</h4>
-                   <p className="text-sm text-gray-600">Configuración manual del sistema.</p>
-                </button>
-            </div>
-          </div>
-        )}
-
-        {/* Contenido del Paso */}
-        {(!isOsStep || selectedOS) && (
-           <div className="flex-grow">
-            {isOsStep && selectedOS && (
-              <button onClick={() => setSelectedOS(null)} className="text-sm text-cyan-600 hover:underline mb-4">
-                &larr; Cambiar sistema operativo
-              </button>
-            )}
-
-            <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-line">{instructions.explanation}</p>
+        <div className="flex-grow">
+            <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-line">{currentStep.explanation}</p>
             
-            {/* Fix: Display the command block even if actions are present. */}
-            {instructions.command && (
+            {currentStep.command && (
               <div className="my-4">
-                <CodeBlock command={instructions.command} />
+                <CodeBlock command={currentStep.command} />
               </div>
             )}
 
-            {instructions.actions && instructions.actions.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-3">
-                {instructions.actions.map((action, actionIndex) => (
-                  <ActionButton key={actionIndex} action={action} />
-                ))}
+            {/* Renderizado de Acciones Agrupado */}
+            {groupedActions && (
+              <div className="mt-6 space-y-6">
+                {/* Grupos ZSH y Bash (para macOS/Linux Paso 3) */}
+                {groupedActions.zshrc && groupedActions.bash_profile && (
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-800 mb-3">Paso 1: Elige tu Shell y Edita el Archivo</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 mb-2">Opción A: ZSH (macOS moderno)</p>
+                        <div className="flex flex-col items-start gap-3">
+                          {groupedActions.zshrc.map((action, i) => <ActionButton key={i} action={action} />)}
+                        </div>
+                      </div>
+                       <div>
+                        <p className="text-sm font-semibold text-gray-600 mb-2">Opción B: Bash (macOS antiguo / Linux)</p>
+                        <div className="flex flex-col items-start gap-3">
+                          {groupedActions.bash_profile.map((action, i) => <ActionButton key={i} action={action} />)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Grupo Común (para macOS/Linux Paso 3) */}
+                {groupedActions.common && (
+                  <div className="pt-4 border-t">
+                     <h4 className="text-base font-semibold text-gray-800 mb-3">Paso 2: Copia el Bloque de Configuración</h4>
+                     <div className="flex flex-wrap gap-3">
+                        {groupedActions.common.map((action, i) => <ActionButton key={i} action={action} />)}
+                     </div>
+                  </div>
+                )}
+                
+                {/* Grupo de Validación (para macOS/Linux Paso 3) */}
+                {groupedActions.validation && (
+                   <div className="pt-4 border-t">
+                     <h4 className="text-base font-semibold text-gray-800 mb-3">Paso 3: Valida tu Configuración</h4>
+                      <p className="text-sm text-gray-600 mb-3">Después de editar, guardar y aplicar los cambios, usa estos botones en una NUEVA terminal para confirmar que todo funciona.</p>
+                     <div className="flex flex-wrap gap-3">
+                        {groupedActions.validation.map((action, i) => <ActionButton key={i} action={action} />)}
+                     </div>
+                  </div>
+                )}
+
+                 {/* Grupo por Defecto (para el resto de los pasos con acciones) */}
+                 {groupedActions.default && (
+                   <div className="pt-4 border-t first:pt-0 first:border-0">
+                     <div className="flex flex-wrap gap-3">
+                        {groupedActions.default.map((action, i) => <ActionButton key={i} action={action} />)}
+                     </div>
+                   </div>
+                 )}
               </div>
             )}
 
-            {instructions.details && (
-                <DetailsDisplay details={instructions.details} />
+            {currentStep.details && (
+                <DetailsDisplay details={currentStep.details} />
             )}
           </div>
-        )}
       </div>
 
       <div className="mt-6 flex justify-between items-center">

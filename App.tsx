@@ -18,12 +18,7 @@ export interface Action {
   label: string;
   type: 'command' | 'link';
   value: string;
-}
-
-export interface OsSpecificInstructions {
-  explanation: string;
-  details?: string;
-  actions?: Action[];
+  group?: string;
 }
 
 export interface Step {
@@ -32,15 +27,40 @@ export interface Step {
   command?: string;
   details?: string;
   actions?: Action[];
-  isOsSpecific?: boolean;
-  osInstructions?: {
-    macos_linux: OsSpecificInstructions;
-    windows: OsSpecificInstructions;
-  };
 }
+
+const OSSelector: React.FC<{ onSelect: (os: 'macos_linux' | 'windows') => void; }> = ({ onSelect }) => {
+  return (
+    <div className="max-w-2xl mx-auto text-center animate-fade-in">
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">Primero, elige tu entorno de desarrollo</h2>
+      <p className="text-gray-600 leading-relaxed mb-8">
+        Selecciona tu sistema operativo para que podamos generar una guía perfectamente adaptada a tus herramientas.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <button
+          onClick={() => onSelect('macos_linux')}
+          className="p-8 border-2 border-gray-300 rounded-lg text-left hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        >
+          <span className="text-4xl" role="img" aria-label="Apple">💻</span>
+          <h3 className="font-bold text-xl text-gray-800 mt-3">macOS / Linux</h3>
+          <p className="text-sm text-gray-600 mt-1">Para terminales ZSH, Bash u otras basadas en Unix.</p>
+        </button>
+        <button
+          onClick={() => onSelect('windows')}
+          className="p-8 border-2 border-gray-300 rounded-lg text-left hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        >
+          <span className="text-4xl" role="img" aria-label="Windows">🖥️</span>
+          <h3 className="font-bold text-xl text-gray-800 mt-3">Windows</h3>
+          <p className="text-sm text-gray-600 mt-1">Para CMD, PowerShell y configuración manual del sistema.</p>
+        </button>
+      </div>
+    </div>
+  );
+};
 
 
 const App: React.FC = () => {
+  const [selectedOS, setSelectedOS] = useState<'macos_linux' | 'windows' | null>(null);
   const [repoUrl, setRepoUrl] = useState<string>('');
   const [androidVersion, setAndroidVersion] = useState<string>('Android 14 (Upside Down Cake)');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -57,12 +77,16 @@ const App: React.FC = () => {
   }, []);
 
   const processRequest = useCallback(async () => {
+    if (!selectedOS) {
+      setError('Por favor, selecciona un sistema operativo para continuar.');
+      setIsLoading(false);
+      return;
+    }
     try {
-      const steps = await generateConversionSteps(repoUrl, androidVersion);
+      const steps = await generateConversionSteps(repoUrl, androidVersion, selectedOS);
       setResult(steps);
     } catch (e) {
       console.error(e);
-      // Fix: Display the specific error message from the service for better user feedback.
       if (e instanceof Error) {
         setError(e.message);
       } else {
@@ -71,7 +95,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [repoUrl, androidVersion]);
+  }, [repoUrl, androidVersion, selectedOS]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setTimeout>;
@@ -100,6 +124,9 @@ const App: React.FC = () => {
     setRepoUrl('');
     setResult([]);
     setError('');
+    setSelectedOS(null);
+    setIsLoading(false);
+    setCurrentStatusIndex(0);
   };
 
   if (showSplash) {
@@ -130,11 +157,19 @@ const App: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         <Header />
         <main className="mt-12">
-          {!result.length && (
-            <>
-              <p className="text-center text-lg text-gray-600 max-w-2xl mx-auto">
-                Ingresa la URL de un repositorio público de GitHub para un proyecto HTML/JS. Nuestra IA generará una guía completa sobre cómo empaquetarlo en un APK de Android.
-              </p>
+           {!selectedOS ? (
+            <OSSelector onSelect={setSelectedOS} />
+          ) : !result.length && !isLoading ? (
+            <div className="animate-fade-in">
+                <div className="text-center mb-6">
+                    <p className="text-gray-600">Sistema Operativo: <span className="font-semibold text-cyan-700">{selectedOS === 'macos_linux' ? 'macOS / Linux' : 'Windows'}</span></p>
+                    <button onClick={handleReset} className="text-sm text-cyan-600 hover:underline">
+                        &larr; Cambiar sistema operativo
+                    </button>
+                </div>
+                 <p className="text-center text-lg text-gray-600 max-w-2xl mx-auto">
+                    Ingresa la URL de un repositorio público de GitHub para un proyecto HTML/JS. Nuestra IA generará una guía completa sobre cómo empaquetarlo en un APK de Android.
+                </p>
               <GitHubInput
                 repoUrl={repoUrl}
                 setRepoUrl={setRepoUrl}
@@ -143,13 +178,14 @@ const App: React.FC = () => {
                 onConvert={handleConvert}
                 isLoading={isLoading}
               />
-            </>
-          )}
+            </div>
+          ) : null}
 
 
           {error && (
             <div className="mt-8 text-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
               <p>{error}</p>
+              <button onClick={handleReset} className="mt-2 text-sm font-semibold text-red-700 underline">Empezar de nuevo</button>
             </div>
           )}
 
