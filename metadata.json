@@ -1,0 +1,5 @@
+{
+  "name": "Guía IA para Convertir Web a APK",
+  "description": "Una aplicación impulsada por IA que toma la URL de un repositorio de GitHub para un proyecto HTML y genera una guía detallada, paso a paso, sobre cómo convertirlo en un archivo APK de Android utilizando herramientas modernas.",
+  "requestFramePermissions": []
+}
