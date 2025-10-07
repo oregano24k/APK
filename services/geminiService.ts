@@ -1,5 +1,9 @@
 
 
+
+
+
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Step } from "../App";
 
@@ -35,7 +39,7 @@ const responseSchema = {
             label: { type: Type.STRING, description: "El texto del botón (ej. 'Abrir .zshrc')." },
             type: { type: Type.STRING, description: "El tipo de acción: 'command' para copiar al portapapeles o 'link' para abrir una URL." },
             value: { type: Type.STRING, description: "El comando a copiar o la URL a abrir." },
-            group: { type: Type.STRING, description: "Un grupo opcional para la UI, ej: 'zshrc', 'bash_profile', 'common', 'validation'." }
+            group: { type: Type.STRING, description: "Un grupo opcional para la UI, ej: 'shell_check', 'zshrc_setup', 'bash_setup', 'common', 'zshrc_apply', 'bash_apply', 'validation'." }
           },
           required: ["label", "type", "value"]
         }
@@ -51,7 +55,7 @@ export async function generateConversionSteps(repoUrl: string, androidVersion: s
     Actúa como un guía tecnológico súper amigable para alguien que no sabe nada de programación.
     Tu objetivo es dar instrucciones "para Dummies" para convertir un proyecto web de GitHub (${repoUrl}) en una app de Android (APK) usando Apache Cordova, apuntando específicamente a **${androidVersion}** para el sistema operativo **${selectedOS}**.
 
-    La respuesta DEBE ser un array de JSON que siga el esquema proporcionado.
+    La respuesta DEBE ser un array de JSON que siga el esquema proporcionionado.
     Cada objeto en el array es un paso, generado específicamente para ${selectedOS}. No incluyas propiedades como 'isOsSpecific' u 'osInstructions'.
 
     Para cada paso:
@@ -79,17 +83,20 @@ export async function generateConversionSteps(repoUrl: string, androidVersion: s
     3.  **Configuración del Entorno (¡El Paso Clave!)**:
         - **title**: "Paso 3: Configuración del Entorno"
         - **explanation**: "${selectedOS === 'macos_linux'
-            ? `Sigue estos pasos en orden. Primero, elige la opción que corresponda a tu sistema operativo para abrir y editar el archivo de configuración correcto. Luego, copia el bloque de configuración y, finalmente, valida que todo funcione.`
+            ? `Este es el paso más importante. Sigue los sub-pasos a continuación en orden estricto para evitar errores:\n1. Identifica qué 'shell' (intérprete de comandos) usa tu terminal.\n2. Crea el archivo de configuración si no existe y luego ábrelo.\n3. Copia y pega nuestro bloque de código.\n4. Aplica los cambios para que tu terminal los reconozca.\n5. Valida que todo esté configurado correctamente.`
             : `Sigue las instrucciones detalladas a continuación para configurar tu sistema manualmente. Luego, usa los botones de validación para confirmar que todo está correcto.`
         }"
         - **actions**: ${selectedOS === 'macos_linux'
             ? `[
-                {"label": "Abrir Archivo (.zshrc)", "type": "command", "value": "nano ~/.zshrc", "group": "zshrc"},
-                {"label": "Aplicar Cambios (.zshrc)", "type": "command", "value": "source ~/.zshrc && echo '¡Configuración aplicada!'", "group": "zshrc"},
-                {"label": "Abrir Archivo (.bash_profile)", "type": "command", "value": "nano ~/.bash_profile", "group": "bash_profile"},
-                {"label": "Aplicar Cambios (.bash_profile)", "type": "command", "value": "source ~/.bash_profile && echo '¡Configuración aplicada!'", "group": "bash_profile"},
-                {"label": "Copiar Bloque de Configuración", "type": "command", "value": "# Configuración Android Cordova\\nexport ANDROID_HOME='TU_RUTA_ANDROID_SDK'\\nexport JAVA_HOME=$(/usr/libexec/java_home)\\nexport PATH=$PATH:$ANDROID_HOME/emulator\\nexport PATH=$PATH:$ANDROID_HOME/platform-tools\\nexport PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin", "group": "common"},
-                {"label": "Validar: ANDROID_HOME", "type": "command", "value": "echo $ANDROID_HOME", "group": "validation"},
+                {"label": "Revisar mi Shell", "type": "command", "value": "echo $SHELL", "group": "shell_check"},
+                {"label": "Crear Archivo (.zshrc)", "type": "command", "value": "touch ~/.zshrc", "group": "zshrc_setup"},
+                {"label": "Abrir Archivo (.zshrc)", "type": "command", "value": "nano ~/.zshrc", "group": "zshrc_setup"},
+                {"label": "Crear Archivo (.bash_profile)", "type": "command", "value": "touch ~/.bash_profile", "group": "bash_setup"},
+                {"label": "Abrir Archivo (.bash_profile)", "type": "command", "value": "nano ~/.bash_profile", "group": "bash_setup"},
+                {"label": "Aplicar Cambios (.zshrc)", "type": "command", "value": "source ~/.zshrc && echo '¡Configuración ZSH aplicada!'", "group": "zshrc_apply"},
+                {"label": "Aplicar Cambios (.bash_profile)", "type": "command", "value": "source ~/.bash_profile && echo '¡Configuración Bash aplicada!'", "group": "bash_apply"},
+                {"label": "Copiar Bloque de Configuración", "type": "command", "value": "# Configuración Android Cordova\\nexport ANDROID_HOME='TU_RUTA_ANDROID_SDK'\\nexport JAVA_HOME=\\\\"$(/usr/libexec/java_home)\\\\"\\nexport PATH=\\\\"$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin\\\\"", "group": "common"},
+                {"label": "Validar: ANDROID_HOME", "type": "command", "value": "echo \\\\"$ANDROID_HOME\\\\"", "group": "validation"},
                 {"label": "Validar: ADB", "type": "command", "value": "which adb", "group": "validation"},
                 {"label": "Validar: AVD Manager", "type": "command", "value": "which avdmanager", "group": "validation"}
                ]`
@@ -100,7 +107,7 @@ export async function generateConversionSteps(repoUrl: string, androidVersion: s
                ]`
         }
         - **details**: "${selectedOS === 'macos_linux'
-            ? `--- Dónde encontrar tu ruta de Android SDK ---\\n1. Abre Android Studio.\\n2. En la pantalla de bienvenida, ve a 'More Actions' -> 'SDK Manager'.\\n3. Copia la ruta que aparece en 'Android SDK Location'.\\n4. IMPORTANTE: En el bloque de código que copiarás, reemplaza el texto 'TU_RUTA_ANDROID_SDK' por la ruta que acabas de copiar. Las comillas simples deben permanecer.\\n--- ¡ATENCIÓN! Evita Duplicados ---\\nAntes de pegar el nuevo bloque, revisa el archivo cuidadosamente. Si ya ves un bloque de código que configure 'ANDROID_HOME', **bórralo por completo** para prevenir errores.\\n--- Cómo usar el editor 'nano' ---\\n- Usa las flechas para moverte.\\n- Guarda: Presiona \`Ctrl+O\` y luego \`Enter\`.\n- Sal: Presiona \`Ctrl+X\`.\n--- Por qué 'Aplicar Cambios' es Crucial ---\\nDespués de guardar el archivo de configuración, tu terminal actual no sabe que ha cambiado. El botón 'Aplicar Cambios' ejecuta el comando 'source', que obliga a la terminal a releer el archivo inmediatamente. Sin este paso, tendrías que cerrar y abrir una nueva ventana de terminal para que los cambios surtan efecto. Este botón es un atajo muy útil para evitar eso.\\n--- Cómo Validar tu Configuración ---\\nDespués de aplicar los cambios, usa los botones de validación. \\n- **Validar ANDROID_HOME**: Debe mostrar la ruta que pegaste (ej. /Users/tu/Library/Android/sdk).\\n- **Validar ADB**: Debe mostrar una ruta que termine en 'platform-tools/adb'.\\n- **Validar AVD Manager**: Debe mostrar una ruta que termine en 'cmdline-tools/latest/bin/avdmanager'.\\nSi alguno falla, revisa cuidadosamente la ruta del SDK que usaste y asegúrate de haber aplicado los cambios con 'source'.`
+            ? `--- Cómo Identificar tu Shell ---\\nEjecuta el comando 'Revisar mi Shell'. Si la salida termina en '/bin/zsh', usa la Opción A (ZSH). Si termina en '/bin/bash', usa la Opción B (Bash). Los macOS modernos usan ZSH por defecto.\\n--- Por qué 'Crear Archivo' es Importante ---\\nEn muchos sistemas, los archivos de configuración no existen por defecto. El comando 'touch' crea el archivo si no existe, o simplemente lo 'toca' sin hacer cambios si ya está allí. Esto previene el error 'archivo no encontrado'.\\n--- Dónde encontrar tu ruta de Android SDK ---\\n1. Abre Android Studio.\\n2. En la pantalla de bienvenida, ve a 'More Actions' -> 'SDK Manager'.\\n3. Copia la ruta que aparece en 'Android SDK Location'.\\n4. IMPORTANTE: En el bloque de código que copiarás, reemplaza el texto 'TU_RUTA_ANDROID_SDK' por la ruta que acabas de copiar. Las comillas simples deben permanecer.\\n--- ¡ATENCIÓN! Evita Duplicados ---\\nAntes de pegar el nuevo bloque, revisa el archivo cuidadosamente. Si ya ves un bloque de código que configure 'ANDROID_HOME', **bórralo por completo** para prevenir errores.\\n--- Cómo usar el editor 'nano' ---\\n- Usa las flechas para moverte.\\n- Guarda: Presiona \`Ctrl+O\` y luego \`Enter\`.\n- Sal: Presiona \`Ctrl+X\`.\n--- Por qué 'Aplicar Cambios' es Crucial ---\\nDespués de guardar el archivo de configuración, tu terminal actual no sabe que ha cambiado. El botón 'Aplicar Cambios' ejecuta el comando 'source', que obliga a la terminal a releer el archivo inmediatamente. Sin este paso, tendrías que cerrar y abrir una nueva ventana de terminal para que los cambios surtan efecto. Este botón es un atajo muy útil para evitar eso.\\n--- Cómo Validar tu Configuración ---\\nDespués de aplicar los cambios, usa los botones de validación. \\n- **Validar ANDROID_HOME**: Debe mostrar la ruta que pegaste (ej. /Users/tu/Library/Android/sdk).\\n- **Validar ADB**: Debe mostrar una ruta que termine en 'platform-tools/adb'.\\n- **Validar AVD Manager**: Debe mostrar una ruta que termine en 'cmdline-tools/latest/bin/avdmanager'.\\nSi alguno falla, revisa cuidadosamente la ruta del SDK que usaste y asegúrate de haber aplicado los cambios con 'source'.`
             : `Crea una lista numerada súper clara y detallada para configurar las variables de entorno manualmente.\\n1. Abre la Configuración Avanzada del Sistema:\\n   a. Presiona la tecla de Windows, escribe 'variables de entorno' y selecciona 'Editar las variables de entorno del sistema'.\\n2. Crea la variable ANDROID_HOME:\\n   a. En la ventana de 'Propiedades del sistema', haz clic en 'Variables de entorno...'.\\n   b. En 'Variables del sistema', haz clic en 'Nueva...'.\\n   c. Nombre de la variable: 'ANDROID_HOME'.\\n   d. Valor de la variable: Pega la ruta que copiaste del SDK Manager de Android Studio (ej. 'C:\\\\Users\\\\tu_usuario\\\\AppData\\\\Local\\\\Android\\\\Sdk').\\n3. Crea la variable JAVA_HOME:\\n   a. Repite el proceso: haz clic en 'Nueva...'.\\n   b. Nombre de la variable: 'JAVA_HOME'.\\n   c. Valor de la variable: La ruta de tu JDK (ej. 'C:\\\\Program Files\\\\Java\\\\jdk-11.0.1').\\n4. Edita la variable Path:\\n   a. En 'Variables del sistema', busca y selecciona la variable 'Path' y haz clic en 'Editar...'.\\n   b. Haz clic en 'Nuevo' y añade cada una de estas líneas, UNA POR UNA:\\n      - '%ANDROID_HOME%\\\\emulator'\\n      - '%ANDROID_HOME%\\\\platform-tools'\\n      - '%ANDROID_HOME%\\\\cmdline-tools\\\\latest\\\\bin'\\n5. Guarda todo:\\n   a. Haz clic en 'Aceptar' en todas las ventanas para cerrar y guardar los cambios.\\n6. Valida la configuración:\\n   a. Abre una NUEVA ventana de terminal (CMD o PowerShell). ¡Es crucial que sea nueva para que tome los cambios!\\n   b. Usa los botones de validación. Compara la salida en tu terminal con el resultado esperado que se describe aquí:\\n      - **Validar ANDROID_HOME**: Debe mostrar la ruta que pegaste (ej. C:\\\\Users\\\\...\\\\Sdk).\\n      - **Validar ADB**: Debe mostrar una ruta que termine en 'platform-tools\\\\adb.exe'.\\n      - **Validar AVD Manager**: Debe mostrar una ruta que termine en 'cmdline-tools\\\\latest\\\\bin\\\\avdmanager.bat'.\\n   c. Si todos estos comandos muestran las rutas correctas, ¡la configuración es correcta! Si alguno falla, revisa cuidadosamente los pasos anteriores.`
         }"
     4.  **Crear el Proyecto**:
